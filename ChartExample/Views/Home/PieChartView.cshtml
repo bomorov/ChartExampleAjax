@@ -1,0 +1,101 @@
+﻿<div id="container"></div>
+<button id="refreshButton">Refresh Chart</button>
+
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+    $(document).ready(function () {
+        //Call first on page load
+        GetDistricts();
+
+        //Defining functions:
+
+        //add listener to click button
+        $('#refreshButton').click(RefreshChart);
+
+        //function for button to refresh chart
+        function RefreshChart() {
+            GetDistricts();
+        };
+
+        //ajax query to get items of chart
+        function GetDistricts() {
+
+            $.ajax({
+                type: "GET",
+                url: "/Home/Districts",
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    //call defined function
+                    BuildChart(data);
+                },
+                error: function () {
+                    //call alert because bad response
+                    alert("Error occured!!")
+                }
+            });
+        };
+
+        //creates chart in defined tagId
+        function BuildChart(response) {
+            let districts = [];
+
+            //define descendingOrder function to order items by value
+            function descendingOrder(a, b) {
+                return b.value > a.value;
+            }
+
+            //sort items and push to defined districts
+            response.chartDataList.sort(descendingOrder).forEach(function (item, index) {
+                if (index === 0) {
+                    districts.push({ name: item.name, y: item.value, sliced: true, selected: true });
+                }
+                else {
+                    districts.push({ name: item.name, y: item.value });
+                }
+            });
+
+            //draw chart
+            Highcharts.chart('container', {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie'
+                },
+                title: {
+                    text: 'Browser market shares in January, 2018'
+                },
+                tooltip: {
+                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                },
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                        }
+                    }
+                },
+                series: [{
+                    name: response.title,
+                    colorByPoint: true,
+                    //here use districts array
+                    data: districts
+                }]
+            });
+        }
+
+    });
+</script>
